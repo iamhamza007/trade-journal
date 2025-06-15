@@ -6,30 +6,42 @@ import json
 import datetime
 import streamlit_authenticator as stauth
 
-# --- USER LOGIN SETUP ---
+# --- 1. HARDCODED HASHED PASSWORDS (DON'T HASH AT RUNTIME) ---
+# Generate these securely using: stauth.Hasher(["your_password"]).generate()
+# You only do this ONCE and paste the output here. These are example hashes:
+hashed_passwords = [
+    '$2b$12$3m5KcXSBf6mSBPeS97NwrOd7gX8NKTj7Ao8ApwFQ7ROHcDh2e7xMK',  # 1234
+    '$2b$12$nFJJeS02LvhysKW6ZKvneOrEQuvhYAmMKdZh/mCT2aCE17M4T3Mhe',  # 5678
+    '$2b$12$MXnbwQuGnTLgPVltjk7H0OWUJRGV1LKR4DEfKa3OULFDG4PtFuVke',  # abcd
+    '$2b$12$Y/urYvFyb0P6GV.2pRfsUeknQyJv9yyNFuQG9AtbghG7zNSEVYUXi',  # xyz123
+]
+
+# --- 2. USER INFO ---
 users = {
     "usernames": {
         "hamza": {
             "name": "Hamza Feroz",
-            "password": stauth.Hasher(["1234"]).generate()[0]
+            "password": hashed_passwords[0]
         },
         "ali": {
             "name": "Ali Raza",
-            "password": stauth.Hasher(["5678"]).generate()[0]
+            "password": hashed_passwords[1]
         },
         "sara": {
             "name": "Sara Khan",
-            "password": stauth.Hasher(["abcd"]).generate()[0]
+            "password": hashed_passwords[2]
         },
         "john": {
             "name": "John Doe",
-            "password": stauth.Hasher(["xyz123"]).generate()[0]
+            "password": hashed_passwords[3]
         },
     }
 }
 
+# --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="Trade Journal", layout="centered")
 
+# --- 4. AUTHENTICATION SETUP ---
 authenticator = stauth.Authenticate(
     users["usernames"], "trade_journal_app", "abcdef", cookie_expiry_days=30
 )
@@ -46,14 +58,14 @@ elif auth_status is None:
 authenticator.logout("Logout", "sidebar")
 st.sidebar.success(f"Logged in as {name}")
 
-# --- USER-SPECIFIC FOLDERS ---
+# --- 5. USER FOLDER SETUP ---
 user_pdf_folder = os.path.join("output_pdfs", username)
 user_data_folder = os.path.join("trade_data", username)
 os.makedirs(user_pdf_folder, exist_ok=True)
 os.makedirs(user_data_folder, exist_ok=True)
 os.makedirs("logos", exist_ok=True)
 
-# Load and save symbols
+# --- 6. SYMBOL MANAGEMENT ---
 def load_symbols():
     try:
         with open("symbols.json", "r") as f:
@@ -67,9 +79,7 @@ def save_symbols(symbols):
 
 symbols = load_symbols()
 
-st.title("📘 Trade Journal Creator")
-
-# --- Sidebar for symbol management ---
+# --- 7. SIDEBAR SYMBOL MANAGEMENT ---
 with st.sidebar:
     st.header("🔧 Manage Symbols")
     new_symbol = st.text_input("Add new symbol")
@@ -85,7 +95,8 @@ with st.sidebar:
         save_symbols(symbols)
         st.warning("All symbols removed.")
 
-# --- Trade Form ---
+# --- 8. TRADE FORM ---
+st.title("📘 Trade Journal Creator")
 st.subheader("📝 Enter Trade Details")
 
 with st.form("trade_form"):
@@ -141,7 +152,7 @@ with st.form("trade_form"):
 
     submitted = st.form_submit_button("✅ Save Trade")
 
-# --- Save and Generate PDF ---
+# --- 9. SAVE TRADE & GENERATE PDF ---
 if submitted:
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     screenshot_file = f"screenshot_{timestamp}.png" if screenshot else None
